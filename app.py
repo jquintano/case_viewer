@@ -1,57 +1,55 @@
 import streamlit as st
-import zipfile
+# import zipfile
 from demo2_utils import *
-from crowning2_utils import *
-from casevwr_utils import *
+# from crowning2_utils import *
+# from casevwr_utils import *
 from htmlTemplates import css, bot_template
 import pyvista as pv
 from stpyvista import stpyvista
+import trimesh
 
 
-# Function to handle zip file upload and processing
-def upload_zip_file():
-    uploaded_file = st.file_uploader("Upload a zip file", type=["stl"])
-
-    if uploaded_file is not None:
-        st.success("Zip file successfully uploaded!")
-
-        # Add a submit button
-        if st.button("Submit"):
-        	mesh_prep_pv = load_prep_from_file(uploaded_file)
-        	st.write(mesh_prep_pv)
-        	return  mesh_prep_pv
-        	
 
 def main():
-	st.set_page_config(page_title="Auto-Design Crown", page_icon=":tooth:")
-	st.header('Auto-Design Crown :tooth:')
+	def callback2(point):
+		mesh = pv.Sphere(center=point, radius=10)
+		plotter.add_mesh(mesh, style='wireframe', color='r')
+		plotter.add_point_labels(point, [f"{point[0]:.2f}, {point[1]:.2f}, {point[2]:.2f}"])
+		print(point)
+
+	mesh_list = []
+	# st.header('Auto-Design Crown :tooth:')
+	st.write(css, unsafe_allow_html=True)
 
 	with st.sidebar:
-		uploaded_file = st.file_uploader("Upload a zip file", type=["stl"])
-		if uploaded_file is not None:
-			st.success("Zip file successfully uploaded!")
-			if st.button("Submit"):
-				# with st.spinner('Processing...'):
-				# 	reader = pv.get_reader(uploaded_file)
-				# 	mesh_prep_3m = reader.read()
-					
-				plotter = pv.Plotter(window_size=[400, 400])
+		uploaded_file = st.file_uploader("Upload STL", type=["stl"], accept_multiple_files=True)
 
-				## Create a mesh with a cube
-				mesh = pv.Cube(center=(0, 0, 0))
+		if st.button("Submit"):
+			with st.spinner('Processing...'):
+				if uploaded_file:
+					for i,file in enumerate(uploaded_file):
+						mesh_prep_3m = load_prep_from_file(file)
+						mesh_list.append(mesh_prep_3m)
+	lowest_vol = 900000000
+	lowest_vol_idx = None
+	if mesh_list:
+		plotter = pv.Plotter()
+		for i,mesh in enumerate(mesh_list):
+			if int(mesh.volume) < int(lowest_vol):
+				lowest_vol = mesh.volume
+				lowest_vol_idx = i
 
-				## Add some scalar field associated to the mesh
-				mesh["myscalar"] = mesh.points[:, 2] * mesh.points[:, 0]
+		for i,mesh in enumerate(mesh_list):
+			if i == lowest_vol_idx:
+				plotter.add_mesh(pv.wrap(mesh), color='w')
+			else:
+				plotter.add_mesh(pv.wrap(mesh))
+			plotter.background_color = "white"
+			plotter.camera_position = 'zx'
+			plotter.window_size = [600, 400]
 
-				## Add mesh to the plotter
-				plotter.add_mesh(mesh, scalars="myscalar", cmap="bwr", line_width=1)
-
-				## Final touches
-				plotter.background_color = "white"
-				plotter.view_isometric()
-
-				## Pass a key to avoid re-rendering at each time something changes in the page
-				stpyvista(plotter, key="pv_cube")
+		plotter.enable_surface_point_picking(callback=callback2, show_point=True)
+		stpyvista(plotter, key='test')
 					
 
 if __name__ == "__main__":

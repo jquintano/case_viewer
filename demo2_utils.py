@@ -21,14 +21,13 @@ tooth_dirpath = "./data/toothlib/mcaudie/post/"
 tooth_dirpath_ottawa = "/Users/nimbyx/Projects/CROWNING/Ottawa Posterior"
 
 def load_prep_from_file(my_file):
-    mesh_3m = trimesh.load_mesh(my_file)
+    mesh_3m = trimesh.load_mesh(my_file, file_type='stl')
     return mesh_3m
 
 def process_plot_case(udx_dirpath, tooth_dirpath):
     my_case = get_random_case(udx_dirpath)
     my_filename, my_mesh = load_prep_from_zip(my_case)
     my_mesh_split = get_two_largest_meshes_3m(my_mesh)
-##    print(os.path.basename(my_case))
     p1 = pv.Plotter(shape=(1, 2))
 
     designed_tooth_mesh = get_designer_tooth(my_case)
@@ -353,13 +352,17 @@ def compute_range(tup):
         return
     return abs(tup[0]-tup[1]), abs(tup[2]-tup[3]), abs(tup[4]-tup[5])
 
+def compute_volume(tup):
+    # if len(tup) != 6:
+    #     return
+    return abs(tup[0]-tup[1]) * abs(tup[2]-tup[3]) * abs(tup[4]-tup[5])
+
 # def get_two_largest_meshes_3m(mesh):
 #     components = mesh.split(only_watertight=False)
 #     components_sorted = sorted(components, key=lambda x: len(x.faces), reverse=True)
 #     if len(components_sorted) < 2:
 #         return components_sorted
 #     return components_sorted[:2]
-
 def get_two_largest_meshes_3m(my_trimesh):
     my_meshes = my_trimesh.split(only_watertight=False)
     mesh_vol = []   
